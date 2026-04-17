@@ -16,4 +16,16 @@ public interface BookOperations {
     void rangeQueryByYear(int fromYear, int toYear) throws Exception;
 
     void highlightDescription(String keyword) throws Exception;
+
+    void searchBool(String keyword, String category) throws Exception;
+
+    void searchFuzzy(String keyword) throws Exception;
+
+    void searchPage(String keyword, int from, int size) throws Exception;
+
+    void updatePrice(String id, double price) throws Exception;
+
+    void deleteBook(String id) throws Exception;
+
+    void upsertBook(String filePath) throws Exception;
 }

@@ -7,12 +7,18 @@ import co.elastic.clients.elasticsearch._types.aggregations.StringTermsBucket;
 import co.elastic.clients.elasticsearch._types.mapping.Property;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.DeleteResponse;
+import co.elastic.clients.elasticsearch.core.IndexResponse;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.UpdateResponse;
 import co.elastic.clients.elasticsearch.core.search.Highlight;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -168,6 +174,101 @@ public class BookIndexService implements BookOperations {
         });
     }
 
+    @Override
+    public void searchBool(String keyword, String category) throws Exception {
+        SearchResponse<Book> response = executeBoolSearch(keyword, category);
+        System.out.println("Bool query results for keyword: " + keyword + ", category: " + category);
+        printBooks(response);
+    }
+
+    @Override
+    public void searchFuzzy(String keyword) throws Exception {
+        SearchResponse<Book> response = executeFuzzySearch(keyword);
+        System.out.println("Fuzzy search results for keyword: " + keyword);
+        printBooks(response);
+    }
+
+    @Override
+    public void searchPage(String keyword, int from, int size) throws Exception {
+        SearchResponse<Book> response = executePagedSearch(keyword, from, size);
+        System.out.println("Paged results for keyword: " + keyword + " from=" + from + " size=" + size);
+        printBooks(response);
+    }
+
+    @Override
+    public void updatePrice(String id, double price) throws Exception {
+        Map<String, Object> partialDocument = new LinkedHashMap<>();
+        partialDocument.put("price", price);
+        UpdateResponse<Book> response = client.update(request -> request
+                .index(INDEX)
+                .id(id)
+                .doc(partialDocument)
+        , Book.class);
+        client.indices().refresh(request -> request.index(INDEX));
+        System.out.println("Updated price for " + id + " to " + price + " with result " + response.result().jsonValue());
+    }
+
+    @Override
+    public void deleteBook(String id) throws Exception {
+        DeleteResponse response = client.delete(request -> request
+                .index(INDEX)
+                .id(id)
+        );
+        client.indices().refresh(request -> request.index(INDEX));
+        System.out.println("Deleted book " + id + " with result " + response.result().jsonValue());
+    }
+
+    @Override
+    public void upsertBook(String filePath) throws Exception {
+        Book book = loadBookFromFile(filePath);
+        IndexResponse response = client.index(request -> request
+                .index(INDEX)
+                .id(book.getId())
+                .document(book)
+        );
+        client.indices().refresh(request -> request.index(INDEX));
+        System.out.println("Upserted book " + book.getId() + " with result " + response.result().jsonValue());
+    }
+
+    SearchResponse<Book> executeBoolSearch(String keyword, String category) throws Exception {
+        return client.search(request -> request
+                .index(INDEX)
+                .query(q -> q.bool(b -> b
+                        .must(m -> m.multiMatch(mm -> mm
+                                .query(keyword)
+                                .fields("title", "description", "tags")
+                        ))
+                        .filter(f -> f.term(t -> t.field("category").value(FieldValue.of(category))))
+                ))
+                .sort(sort -> sort.field(field -> field.field("publishedYear").order(SortOrder.Desc)))
+        , Book.class);
+    }
+
+    SearchResponse<Book> executeFuzzySearch(String keyword) throws Exception {
+        return client.search(request -> request
+                .index(INDEX)
+                .query(q -> q.match(m -> m
+                        .field("title")
+                        .query(keyword)
+                        .fuzziness("AUTO")
+                ))
+                .sort(sort -> sort.score(score -> score.order(SortOrder.Desc)))
+        , Book.class);
+    }
+
+    SearchResponse<Book> executePagedSearch(String keyword, int from, int size) throws Exception {
+        return client.search(request -> request
+                .index(INDEX)
+                .from(from)
+                .size(size)
+                .query(q -> q.multiMatch(m -> m
+                        .query(keyword)
+                        .fields("title", "description", "tags")
+                ))
+                .sort(sort -> sort.field(field -> field.field("publishedYear").order(SortOrder.Desc)))
+        , Book.class);
+    }
+
     private void printBooks(SearchResponse<Book> response) {
         response.hits().hits().forEach(hit -> {
             Book book = hit.source();
@@ -183,6 +284,12 @@ public class BookIndexService implements BookOperations {
                 throw new IllegalStateException("books.json resource not found");
             }
             return objectMapper.readValue(inputStream, new TypeReference<List<Book>>() {});
+        }
+    }
+
+    private Book loadBookFromFile(String filePath) throws Exception {
+        try (InputStream inputStream = Files.newInputStream(Path.of(filePath))) {
+            return objectMapper.readValue(inputStream, Book.class);
         }
     }
 }
