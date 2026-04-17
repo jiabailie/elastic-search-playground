@@ -1,0 +1,42 @@
+[
+  {
+    "id": "book-1",
+    "title": "Elasticsearch Basics",
+    "author": "Alice",
+    "category": "search",
+    "tags": ["elasticsearch", "intro", "search"],
+    "price": 39.99,
+    "publishedYear": 2022,
+    "description": "A beginner guide to indexing, searching, and aggregations."
+  },
+  {
+    "id": "book-2",
+    "title": "Distributed Systems with Search",
+    "author": "Bob",
+    "category": "distributed-systems",
+    "tags": ["distributed", "search", "architecture"],
+    "price": 49.50,
+    "publishedYear": 2021,
+    "description": "How distributed systems concepts apply to search infrastructure."
+  },
+  {
+    "id": "book-3",
+    "title": "Advanced Query DSL",
+    "author": "Carol",
+    "category": "search",
+    "tags": ["elasticsearch", "dsl", "queries"],
+    "price": 59.00,
+    "publishedYear": 2023,
+    "description": "Deep dive into bool queries, filters, relevance, and analyzers."
+  },
+  {
+    "id": "book-4",
+    "title": "Analytics at Scale",
+    "author": "David",
+    "category": "analytics",
+    "tags": ["analytics", "aggregations", "elasticsearch"],
+    "price": 44.75,
+    "publishedYear": 2020,
+    "description": "Using aggregations and time-based analysis in Elasticsearch."
+  }
+]
