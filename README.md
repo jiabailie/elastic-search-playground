@@ -12,10 +12,14 @@ It currently includes:
   - bulk indexing
   - full-text search
   - terms aggregation
+  - bool queries
+  - fuzzy queries
+  - paginated queries
   - filters
   - sorting
   - highlighting
   - range queries
+  - document update/delete/upsert
 
 ## Requirements
 
@@ -120,6 +124,51 @@ java -jar target/elastic-search-playground-1.0-SNAPSHOT.jar range-year 2021 2023
 
 ```bash
 java -jar target/elastic-search-playground-1.0-SNAPSHOT.jar highlight-description search
+```
+
+### 9. Run A Bool Query
+
+```bash
+java -jar target/elastic-search-playground-1.0-SNAPSHOT.jar search-bool query search
+```
+
+### 10. Run A Fuzzy Query
+
+```bash
+java -jar target/elastic-search-playground-1.0-SNAPSHOT.jar search-fuzzy Elasticsarch
+```
+
+### 11. Run A Paginated Query
+
+```bash
+java -jar target/elastic-search-playground-1.0-SNAPSHOT.jar search-page search 0 2
+java -jar target/elastic-search-playground-1.0-SNAPSHOT.jar search-page search 2 2
+```
+
+### 12. Update A Book Price
+
+```bash
+java -jar target/elastic-search-playground-1.0-SNAPSHOT.jar update-price book-1 88.75
+```
+
+### 13. Delete A Book
+
+```bash
+java -jar target/elastic-search-playground-1.0-SNAPSHOT.jar delete-book book-4
+```
+
+### 14. Upsert A Book From JSON
+
+Sample input file:
+
+```text
+src/main/resources/book-upsert.json
+```
+
+Command:
+
+```bash
+java -jar target/elastic-search-playground-1.0-SNAPSHOT.jar upsert-book src/main/resources/book-upsert.json
 ```
 
 ## Use Kibana
@@ -227,6 +276,66 @@ GET books/_search
 }
 ```
 
+Example bool query:
+
+```json
+GET books/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "multi_match": {
+            "query": "query",
+            "fields": ["title", "description", "tags"]
+          }
+        }
+      ],
+      "filter": [
+        {
+          "term": {
+            "category": "search"
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+Example fuzzy query:
+
+```json
+GET books/_search
+{
+  "query": {
+    "match": {
+      "title": {
+        "query": "Elasticsarch",
+        "fuzziness": "AUTO"
+      }
+    }
+  }
+}
+```
+
+Example partial update:
+
+```json
+POST books/_update/book-1
+{
+  "doc": {
+    "price": 88.75
+  }
+}
+```
+
+Example delete:
+
+```json
+DELETE books/_doc/book-4
+```
+
 ## Optional Environment Variable
 
 If Elasticsearch is not running on `localhost:9200`, set:
@@ -259,11 +368,12 @@ docker compose down -v
 
 The project includes:
 
-- GitHub Actions CI for test and build
-- a small unit test suite for the command dispatcher layer
+- GitHub Actions CI for `verify` and package
+- unit tests for the command dispatcher
+- Testcontainers-based integration tests for Elasticsearch-backed operations
 
-Run tests locally:
+Run unit and integration tests locally:
 
 ```bash
-mvn test
+mvn verify
 ```

@@ -45,6 +45,30 @@ class CommandDispatcherTest {
     }
 
     @Test
+    void dispatches_bool_fuzzy_paging_update_delete_and_upsert() throws Exception {
+        RecordingOperations operations = new RecordingOperations();
+        CommandDispatcher dispatcher = new CommandDispatcher(operations);
+
+        dispatcher.dispatch(new String[] {"search-bool", "elastic", "search"});
+        assertEquals("search-bool:elastic:search", operations.lastCommand);
+
+        dispatcher.dispatch(new String[] {"search-fuzzy", "elastcsearch"});
+        assertEquals("search-fuzzy:elastcsearch", operations.lastCommand);
+
+        dispatcher.dispatch(new String[] {"search-page", "search", "1", "2"});
+        assertEquals("search-page:search:1:2", operations.lastCommand);
+
+        dispatcher.dispatch(new String[] {"update-price", "book-1", "55.5"});
+        assertEquals("update-price:book-1:55.5", operations.lastCommand);
+
+        dispatcher.dispatch(new String[] {"delete-book", "book-2"});
+        assertEquals("delete-book:book-2", operations.lastCommand);
+
+        dispatcher.dispatch(new String[] {"upsert-book", "src/main/resources/book-upsert.json"});
+        assertEquals("upsert-book:src/main/resources/book-upsert.json", operations.lastCommand);
+    }
+
+    @Test
     void rejects_missing_required_arguments() {
         RecordingOperations operations = new RecordingOperations();
         CommandDispatcher dispatcher = new CommandDispatcher(operations);
@@ -63,6 +87,9 @@ class CommandDispatcherTest {
 
         assertThrows(IllegalArgumentException.class, () -> dispatcher.dispatch(new String[] {"sort-price", "highest"}));
         assertThrows(IllegalArgumentException.class, () -> dispatcher.dispatch(new String[] {"range-year", "start", "2023"}));
+        assertThrows(IllegalArgumentException.class, () -> dispatcher.dispatch(new String[] {"search-page", "search", "-1", "2"}));
+        assertThrows(IllegalArgumentException.class, () -> dispatcher.dispatch(new String[] {"search-page", "search", "0", "0"}));
+        assertThrows(IllegalArgumentException.class, () -> dispatcher.dispatch(new String[] {"update-price", "book-1", "free"}));
     }
 
     @Test
@@ -114,6 +141,36 @@ class CommandDispatcherTest {
         @Override
         public void highlightDescription(String keyword) {
             lastCommand = "highlight-description:" + keyword;
+        }
+
+        @Override
+        public void searchBool(String keyword, String category) {
+            lastCommand = "search-bool:" + keyword + ":" + category;
+        }
+
+        @Override
+        public void searchFuzzy(String keyword) {
+            lastCommand = "search-fuzzy:" + keyword;
+        }
+
+        @Override
+        public void searchPage(String keyword, int from, int size) {
+            lastCommand = "search-page:" + keyword + ":" + from + ":" + size;
+        }
+
+        @Override
+        public void updatePrice(String id, double price) {
+            lastCommand = "update-price:" + id + ":" + price;
+        }
+
+        @Override
+        public void deleteBook(String id) {
+            lastCommand = "delete-book:" + id;
+        }
+
+        @Override
+        public void upsertBook(String filePath) {
+            lastCommand = "upsert-book:" + filePath;
         }
     }
 }

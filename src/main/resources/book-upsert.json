@@ -1,0 +1,10 @@
+{
+  "id": "book-5",
+  "title": "Search Relevance Tuning",
+  "author": "Eve",
+  "category": "search",
+  "tags": ["search", "relevance", "ranking"],
+  "price": 62.25,
+  "publishedYear": 2024,
+  "description": "Practical techniques for tuning ranking, relevance, and user-facing search quality."
+}
