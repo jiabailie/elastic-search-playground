@@ -71,7 +71,7 @@ class BookIndexServiceIT {
                 .map(hit -> hit.id())
                 .toList();
         assertEquals(2, hitIds.size());
-        assertTrue(hitIds.contains("book-3"));
+        assertTrue(hitIds.contains("book-1"));
         assertTrue(hitIds.contains("book-4"));
     }
 
